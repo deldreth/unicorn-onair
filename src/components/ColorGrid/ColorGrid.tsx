@@ -1,36 +1,74 @@
 import React from "react";
 
-import Color from "../Color/Color";
+import { Stage, Layer, Circle } from "react-konva";
 import { ColorContext } from "../../context/ColorContext";
+import { iconMap } from "../../resources/weatherPixels";
+
+type Pixel = number[];
+type Row = Pixel[];
+type Pixels = Row[];
+
+function componentToHex(c: number) {
+  var hex = c.toString(16);
+  return hex.length === 1 ? "0" + hex : hex;
+}
+
+function rgbToHex([r, g, b]: number[]) {
+  return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
 
 type Props = {
   width: number;
-  height: number;
+  mode: "paint" | "weather";
 };
 
-type Cell = [number, number, string];
-type Grid = Cell[];
-
-function ColorGrid({ width, height }: Props) {
-  const [grid, setGrid] = React.useState<Grid>([]);
+function Grid({ width, mode }: Props) {
+  const [grid, setGrid] = React.useState<Pixels>([]);
   const [isDrawing, setIsDrawing] = React.useState(false);
   const selectedColor = React.useContext(ColorContext);
 
-  React.useEffect(() => {
-    const firstGrid: Grid = [];
+  const pixelWidth = width / 4;
 
-    for (let h = 0; h < height; h++) {
-      for (let w = width - 1; w >= 0; w--) {
-        firstGrid.push([h, w, "#fff"]);
-      }
+  React.useEffect(() => {
+    async function getPixels() {
+      const data = await fetch("http://192.168.1.245:5000/pixels");
+      const nextGrid = await data.json();
+
+      setGrid(nextGrid);
     }
 
-    setGrid(firstGrid);
-  }, [width, height]);
+    async function getWeather() {
+      const data = await fetch(
+        "http://api.openweathermap.org/data/2.5/forecast?id=4453066&units=imperial&appid=c5cfd7e0fc16c338ce42928df25078b1"
+      );
+      const weather = await data.json();
+      const { icon } = weather.list[0].weather[0] as { icon: string };
+      const iconPixels = iconMap[icon];
 
-  function updateColor(index: number) {
-    const nextGrid: Grid = [...grid];
-    nextGrid[index] = [grid[index][0], grid[index][1], selectedColor.hex];
+      fetch("http://192.168.1.245:5000/pixels", {
+        method: "post",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          pixels: iconPixels,
+        }),
+      });
+
+      setGrid(iconPixels);
+    }
+
+    if (mode === "weather") {
+      getWeather();
+    } else {
+      getPixels();
+    }
+  }, [mode]);
+
+  function updateColor(x: number, y: number, rgb: number[]) {
+    const nextGrid: Pixels = [...grid];
+    nextGrid[x][y] = rgb;
+
     setGrid(nextGrid);
 
     fetch("http://192.168.1.245:5000", {
@@ -39,42 +77,68 @@ function ColorGrid({ width, height }: Props) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        x: grid[index][0],
-        y: grid[index][1],
+        x: y,
+        y: x,
         rgb: selectedColor.rgb,
       }),
     });
   }
 
-  return (
-    <div
-      className="grid-container"
-      onMouseDown={() => setIsDrawing(true)}
-      onMouseUp={() => setIsDrawing(false)}
-      onTouchStart={() => setIsDrawing(true)}
-      onTouchEnd={() => setIsDrawing(false)}
-      onTouchMove={() => {
-        if (isDrawing) {
-        }
-      }}
-    >
-      {grid.map(([x, y, color], index) => (
-        <Color
-          key={`${x}-${y}`}
-          x={x}
-          y={y}
-          drawing={isDrawing}
-          color={color}
-          onClick={() => updateColor(index)}
-        />
-      ))}
-    </div>
-  );
+  if (grid) {
+    return (
+      <Stage
+        width={width}
+        height={width * 2}
+        style={{ marginRight: "auto", marginLeft: "auto", width }}
+      >
+        <Layer
+          onTouchStart={() => setIsDrawing(true)}
+          onTouchEnd={() => setIsDrawing(false)}
+          onMouseDown={() => setIsDrawing(true)}
+          onMouseUp={() => setIsDrawing(false)}
+        >
+          {grid.map((column, colIndex) =>
+            column.map((row, rowIndex) => (
+              <Circle
+                key={`${colIndex}-${rowIndex}`}
+                x={pixelWidth * colIndex + pixelWidth / 2}
+                y={pixelWidth * rowIndex + pixelWidth / 2}
+                radius={pixelWidth / 2 - 5}
+                fill={rgbToHex(row)}
+                onMouseDown={() =>
+                  updateColor(
+                    colIndex,
+                    rowIndex,
+                    Object.values(selectedColor.rgb)
+                  )
+                }
+                onMouseOver={() => {
+                  if (isDrawing) {
+                    updateColor(
+                      colIndex,
+                      rowIndex,
+                      Object.values(selectedColor.rgb)
+                    );
+                  }
+                }}
+                onTouchMove={() => {
+                  if (isDrawing) {
+                    updateColor(
+                      colIndex,
+                      rowIndex,
+                      Object.values(selectedColor.rgb)
+                    );
+                  }
+                }}
+              />
+            ))
+          )}
+        </Layer>
+      </Stage>
+    );
+  } else {
+    return <div>Fetching pixels!</div>;
+  }
 }
 
-ColorGrid.defaultProps = {
-  width: 4,
-  height: 8,
-};
-
-export default ColorGrid;
+export default Grid;

@@ -45,8 +45,7 @@ def update_weather():
     json = response.json()
     icon = json['list'][0]['weather'][0]['icon']
 
-    print(time.strftime("%I:%M:%S") + " " +
-          json['list'][0]['weather'][0]['description'])
+    print(json['list'][0]['weather'][0])
 
     unicorn.set_pixels(iconMap[icon])
     unicorn.show()

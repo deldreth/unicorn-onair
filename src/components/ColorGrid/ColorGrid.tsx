@@ -1,21 +1,12 @@
 import React from "react";
 
-import { Stage, Layer, Circle } from "react-konva";
+import { Stage, Layer, Circle, Rect } from "react-konva";
+
 import { ColorContext } from "../../context/ColorContext";
-import { iconMap } from "../../resources/weatherPixels";
-
-type Pixel = number[];
-type Row = Pixel[];
-type Pixels = Row[];
-
-function componentToHex(c: number) {
-  var hex = c.toString(16);
-  return hex.length === 1 ? "0" + hex : hex;
-}
-
-function rgbToHex([r, g, b]: number[]) {
-  return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-}
+import { getPixels as fetchPixels } from "../Pixels/utils/getPixels";
+import { Pixels } from "../Pixels/Pixels";
+import { rgbToHex } from "../../utils/rgbToHex";
+import { setPixel } from "../Pixels/utils/setPixel";
 
 type Props = {
   width: number;
@@ -31,72 +22,39 @@ function Grid({ width, mode }: Props) {
 
   React.useEffect(() => {
     async function getPixels() {
-      const data = await fetch("http://192.168.1.245:5000/pixels");
-      const nextGrid = await data.json();
-
-      setGrid(nextGrid);
+      setGrid(await fetchPixels());
     }
 
-    async function getWeather() {
-      const data = await fetch(
-        "http://api.openweathermap.org/data/2.5/forecast?id=4453066&units=imperial&appid=c5cfd7e0fc16c338ce42928df25078b1"
-      );
-      const weather = await data.json();
-      const { icon } = weather.list[0].weather[0] as { icon: string };
-      const iconPixels = iconMap[icon];
-
-      fetch("http://192.168.1.245:5000/pixels", {
-        method: "post",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          pixels: iconPixels,
-        }),
-      });
-
-      setGrid(iconPixels);
-    }
-
-    if (mode === "weather") {
-      getWeather();
-    } else {
-      getPixels();
-    }
+    getPixels();
   }, [mode]);
 
-  function updateColor(x: number, y: number, rgb: number[]) {
+  function updateColor(x: number, y: number) {
     const nextGrid: Pixels = [...grid];
-    nextGrid[x][y] = rgb;
+    const { rgb } = selectedColor;
+    nextGrid[x][y] = Object.values(rgb);
 
     setGrid(nextGrid);
-
-    fetch("http://192.168.1.245:5000", {
-      method: "post",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        x: y,
-        y: x,
-        rgb: selectedColor.rgb,
-      }),
-    });
+    setPixel(x, y, rgb);
   }
 
   if (grid) {
     return (
-      <Stage
-        width={width}
-        height={width * 2}
-        style={{ marginRight: "auto", marginLeft: "auto", width }}
-      >
+      <Stage width={width} height={width * 2} style={{ width }}>
         <Layer
           onTouchStart={() => setIsDrawing(true)}
           onTouchEnd={() => setIsDrawing(false)}
           onMouseDown={() => setIsDrawing(true)}
           onMouseUp={() => setIsDrawing(false)}
         >
+          <Rect
+            x={0}
+            y={0}
+            width={width}
+            height={width * 2}
+            cornerRadius={pixelWidth / 2 - 2}
+            fill="#222222"
+          />
+
           {grid.map((column, colIndex) =>
             column.map((row, rowIndex) => (
               <Circle
@@ -105,29 +63,15 @@ function Grid({ width, mode }: Props) {
                 y={pixelWidth * rowIndex + pixelWidth / 2}
                 radius={pixelWidth / 2 - 5}
                 fill={rgbToHex(row)}
-                onMouseDown={() =>
-                  updateColor(
-                    colIndex,
-                    rowIndex,
-                    Object.values(selectedColor.rgb)
-                  )
-                }
+                onMouseDown={() => updateColor(colIndex, rowIndex)}
                 onMouseOver={() => {
                   if (isDrawing) {
-                    updateColor(
-                      colIndex,
-                      rowIndex,
-                      Object.values(selectedColor.rgb)
-                    );
+                    updateColor(colIndex, rowIndex);
                   }
                 }}
                 onTouchMove={() => {
                   if (isDrawing) {
-                    updateColor(
-                      colIndex,
-                      rowIndex,
-                      Object.values(selectedColor.rgb)
-                    );
+                    updateColor(colIndex, rowIndex);
                   }
                 }}
               />

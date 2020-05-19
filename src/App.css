@@ -4,11 +4,6 @@
   align-items: center;
 }
 
-.color-picker-container {
-  margin-bottom: 2em;
-  width: 100%;
-}
-
 .pixels-container {
   display: flex;
   justify-content: center;

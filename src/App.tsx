@@ -1,62 +1,53 @@
 import React from "react";
 
-import { HuePicker } from "react-color";
-
+import { BASE_URL } from "./utils/config";
 import {
   ColorContext,
   defaultValue as defaultColorValue,
 } from "./context/ColorContext";
+import { getPixels as fetchPixels } from "./components/Pixels/utils/getPixels";
 import ColorGrid from "./components/ColorGrid/ColorGrid";
+import ColorPicker from "./components/ColorPicker/ColorPicker";
 import ModeSelector from "./components/ModeSelector/ModeSelector";
-import Weather from "./containers/Weather/Weather";
+import Pixels, { Pixels as PixelsType } from "./components/Pixels/Pixels";
 
-import "antd/dist/antd.css";
 import "./App.css";
-
-type ColorValue = {
-  hex: string;
-  rgb: { r: number; g: number; b: number };
-};
-
-function renderColorPicker(
-  mode: string,
-  color: ColorValue,
-  setColor: (color: ColorValue) => void
-) {
-  if (mode === "paint" || mode === "frames") {
-    return (
-      <div className="color-picker-container">
-        <HuePicker
-          width="100%"
-          height="44px"
-          color={color.hex}
-          onChangeComplete={({ hex, rgb }) =>
-            setColor({
-              hex,
-              rgb,
-            })
-          }
-        />
-      </div>
-    );
-  }
-}
 
 function App() {
   const [color, setColor] = React.useState(defaultColorValue);
-  const [mode, setMode] = React.useState("paint");
+  const [mode, setMode] = React.useState("auto");
+  const [pixels, setPixels] = React.useState<PixelsType>([]);
+
+  React.useEffect(() => {
+    async function getMode() {
+      const response = await fetch(`${BASE_URL}/mode`);
+      const { mode } = await response.json();
+
+      setMode(mode);
+    }
+
+    getMode();
+  }, []);
+
+  React.useEffect(() => {
+    async function getPixels() {
+      setPixels(await fetchPixels());
+    }
+
+    getPixels();
+  }, [mode]);
 
   return (
     <ColorContext.Provider value={color}>
       <div className="app-container">
         <ModeSelector mode={mode} onChange={setMode} />
 
-        {renderColorPicker(mode, color, setColor)}
+        {mode === "paint" && <ColorPicker color={color} onChange={setColor} />}
 
-        <div className="pixels-container'">
-          {mode === "paint" && <ColorGrid width={300} mode={mode} />}
+        <div className="is-centered">
+          {mode === "paint" && <ColorGrid width={300} />}
 
-          {mode === "weather" && <Weather />}
+          {mode !== "paint" && <Pixels width={300} pixels={pixels} />}
         </div>
       </div>
     </ColorContext.Provider>

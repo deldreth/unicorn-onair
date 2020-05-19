@@ -10,10 +10,9 @@ import { setPixel } from "../Pixels/utils/setPixel";
 
 type Props = {
   width: number;
-  mode: "paint" | "weather";
 };
 
-function Grid({ width, mode }: Props) {
+function Grid({ width }: Props) {
   const [grid, setGrid] = React.useState<Pixels>([]);
   const [isDrawing, setIsDrawing] = React.useState(false);
   const selectedColor = React.useContext(ColorContext);
@@ -26,7 +25,7 @@ function Grid({ width, mode }: Props) {
     }
 
     getPixels();
-  }, [mode]);
+  }, []);
 
   function updateColor(x: number, y: number) {
     const nextGrid: Pixels = [...grid];
@@ -69,6 +68,7 @@ function Grid({ width, mode }: Props) {
                     updateColor(colIndex, rowIndex);
                   }
                 }}
+                onTouchStart={() => updateColor(colIndex, rowIndex)}
                 onTouchMove={() => {
                   if (isDrawing) {
                     updateColor(colIndex, rowIndex);

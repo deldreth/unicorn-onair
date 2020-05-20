@@ -1,8 +1,5 @@
 .color-picker-container {
-  display: flex;
-  margin-bottom: 2em;
-  flex-direction: column;
-  width: 80%;
+  margin-bottom: 0.75rem;
 }
 
 .color-picker {

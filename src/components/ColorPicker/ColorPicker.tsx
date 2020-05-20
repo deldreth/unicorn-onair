@@ -19,25 +19,29 @@ function ColorPicker({ color, onChange }: Props) {
 
   return (
     <div className="color-picker-container">
-      <div className="buttons has-addons is-centered">
-        {pickers.map((opt) => (
-          <button
-            className={classNames("button", {
-              "is-selected": picker === opt,
-              "is-info": picker === opt,
-            })}
-            onClick={() => setPicker(opt)}
-          >
-            {opt}
-          </button>
-        ))}
+      <div className="field">
+        <label className="label">color picker</label>
+        <div className="control">
+          <div className="buttons has-addons">
+            {pickers.map((opt) => (
+              <button
+                className={classNames("button", {
+                  "is-selected": picker === opt,
+                  "is-info": picker === opt,
+                })}
+                onClick={() => setPicker(opt)}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="color-picker">
         {picker === "hue" && (
           <HuePicker
             width="100%"
-            height="44px"
             color={color.hex}
             onChangeComplete={({ hex, rgb }) =>
               onChange({

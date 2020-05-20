@@ -3,40 +3,34 @@ import React from "react";
 import { Stage, Layer, Circle, Rect } from "react-konva";
 
 import { ColorContext } from "../../context/ColorContext";
-import { getPixels as fetchPixels } from "../Pixels/utils/getPixels";
-import { Pixels } from "../Pixels/Pixels";
 import { rgbToHex } from "../../utils/rgbToHex";
 import { setPixel } from "../Pixels/utils/setPixel";
+import { Pixels as PixelsType } from "../Pixels/Pixels";
 
 type Props = {
   width: number;
+  pixels: PixelsType;
+  onChange: (pixels: PixelsType) => void;
 };
 
-function Grid({ width }: Props) {
-  const [grid, setGrid] = React.useState<Pixels>([]);
+function Grid({ width, pixels, onChange }: Props) {
   const [isDrawing, setIsDrawing] = React.useState(false);
   const selectedColor = React.useContext(ColorContext);
 
   const pixelWidth = width / 4;
 
-  React.useEffect(() => {
-    async function getPixels() {
-      setGrid(await fetchPixels());
-    }
-
-    getPixels();
-  }, []);
-
   function updateColor(x: number, y: number) {
-    const nextGrid: Pixels = [...grid];
-    const { rgb } = selectedColor;
-    nextGrid[x][y] = Object.values(rgb);
+    const nextPixels: PixelsType = [...pixels];
+    const {
+      rgb: { r, g, b },
+    } = selectedColor;
+    nextPixels[x][y] = Object.values({ r, g, b });
 
-    setGrid(nextGrid);
-    setPixel(x, y, rgb);
+    onChange(nextPixels);
+    setPixel(x, y, { r, g, b });
   }
 
-  if (grid) {
+  if (pixels) {
     return (
       <Stage width={width} height={width * 2} style={{ width }}>
         <Layer
@@ -54,7 +48,7 @@ function Grid({ width }: Props) {
             fill="#222222"
           />
 
-          {grid.map((column, colIndex) =>
+          {pixels.map((column, colIndex) =>
             column.map((row, rowIndex) => (
               <Circle
                 key={`${colIndex}-${rowIndex}`}

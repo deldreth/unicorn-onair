@@ -1,0 +1,23 @@
+.frames-container {
+}
+
+.frames {
+  display: grid;
+  grid-gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, 58px);
+
+  border: 1px solid #222222;
+  background-color: #999999;
+  border-radius: 4px;
+  padding: 0.75rem;
+  align-items: center;
+}
+
+.frame {
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.frame.selected {
+  background-color: #f14668;
+}

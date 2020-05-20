@@ -8,6 +8,7 @@ import {
 import { getPixels as fetchPixels } from "./components/Pixels/utils/getPixels";
 import ColorGrid from "./components/ColorGrid/ColorGrid";
 import ColorPicker from "./components/ColorPicker/ColorPicker";
+import Frames from "./components/Frames/Frames";
 import ModeSelector from "./components/ModeSelector/ModeSelector";
 import Pixels, { Pixels as PixelsType } from "./components/Pixels/Pixels";
 
@@ -17,6 +18,8 @@ function App() {
   const [color, setColor] = React.useState(defaultColorValue);
   const [mode, setMode] = React.useState("auto");
   const [pixels, setPixels] = React.useState<PixelsType>([]);
+
+  const isPaintable = mode === "paint" || mode === "frames";
 
   React.useEffect(() => {
     async function getMode() {
@@ -39,16 +42,24 @@ function App() {
 
   return (
     <ColorContext.Provider value={color}>
-      <div className="app-container">
+      <div className="container">
         <ModeSelector mode={mode} onChange={setMode} />
 
-        {mode === "paint" && <ColorPicker color={color} onChange={setColor} />}
+        {isPaintable && <ColorPicker color={color} onChange={setColor} />}
 
-        <div className="is-centered">
-          {mode === "paint" && <ColorGrid width={300} />}
+        <div className="pixels-container">
+          {isPaintable && (
+            <ColorGrid
+              width={150}
+              pixels={pixels}
+              onChange={(nextPixels) => setPixels(nextPixels)}
+            />
+          )}
 
-          {mode !== "paint" && <Pixels width={300} pixels={pixels} />}
+          {!isPaintable && <Pixels width={300} pixels={pixels} />}
         </div>
+
+        {mode === "frames" && <Frames pixels={pixels} />}
       </div>
     </ColorContext.Provider>
   );

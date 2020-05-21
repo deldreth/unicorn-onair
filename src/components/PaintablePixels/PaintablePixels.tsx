@@ -1,11 +1,11 @@
 import React from "react";
 
-import { Stage, Layer, Circle, Rect } from "react-konva";
+import { Stage, Layer, Rect } from "react-konva";
 
 import { ColorContext } from "../../context/ColorContext";
-import { rgbToHex } from "../../utils/rgbToHex";
-import { setPixel } from "../Pixels/utils/setPixel";
 import { Pixels as PixelsType } from "../Pixels/Pixels";
+import { setPixel } from "../Pixels/utils/setPixel";
+import Pixel from "../Pixel/Pixel";
 
 type Props = {
   isPainting: boolean;
@@ -15,7 +15,13 @@ type Props = {
   onDrawChange: (status: boolean) => void;
 };
 
-function Grid({ width, pixels, onChange, isPainting, onDrawChange }: Props) {
+function PaintablePixels({
+  width,
+  pixels,
+  onChange,
+  isPainting,
+  onDrawChange,
+}: Props) {
   const selectedColor = React.useContext(ColorContext);
 
   const pixelWidth = width / 4;
@@ -50,13 +56,13 @@ function Grid({ width, pixels, onChange, isPainting, onDrawChange }: Props) {
           />
 
           {pixels.map((column, colIndex) =>
-            column.map((row, rowIndex) => (
-              <Circle
+            column.map((rgb, rowIndex) => (
+              <Pixel
                 key={`${colIndex}-${rowIndex}`}
-                x={pixelWidth * colIndex + pixelWidth / 2}
-                y={pixelWidth * rowIndex + pixelWidth / 2}
-                radius={pixelWidth / 2 - 5}
-                fill={rgbToHex(row)}
+                width={pixelWidth}
+                column={colIndex}
+                row={rowIndex}
+                rgb={rgb}
                 onMouseDown={() => updateColor(colIndex, rowIndex)}
                 onMouseOver={() => {
                   if (isPainting) {
@@ -80,4 +86,4 @@ function Grid({ width, pixels, onChange, isPainting, onDrawChange }: Props) {
   }
 }
 
-export default Grid;
+export default PaintablePixels;

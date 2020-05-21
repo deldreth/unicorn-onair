@@ -1,11 +1,11 @@
 import React from "react";
 
-import { Stage, Layer, Circle, Rect } from "react-konva";
+import { Stage, Layer, Rect } from "react-konva";
 
-import { rgbToHex } from "../../utils/rgbToHex";
+import Pixel from "../Pixel/Pixel";
 
-type Pixel = number[];
-type Row = Pixel[];
+type Cell = number[];
+type Row = Cell[];
 export type Pixels = Row[];
 
 type Props = {
@@ -27,14 +27,15 @@ function Pixels({ width, pixels }: Props) {
           cornerRadius={pixelWidth / 2 - 2}
           fill="#222222"
         />
+
         {pixels.map((column, colIndex) =>
-          column.map((row, rowIndex) => (
-            <Circle
+          column.map((rgb, rowIndex) => (
+            <Pixel
               key={`${colIndex}-${rowIndex}`}
-              x={pixelWidth * colIndex + pixelWidth / 2}
-              y={pixelWidth * rowIndex + pixelWidth / 2}
-              radius={pixelWidth / 2 - 2}
-              fill={rgbToHex(row)}
+              width={pixelWidth}
+              column={colIndex}
+              row={rowIndex}
+              rgb={rgb}
             />
           ))
         )}

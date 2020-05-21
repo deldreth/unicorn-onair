@@ -8,7 +8,6 @@ from onair_icons import onair_frames
 from weather_icons import get_weather_icon, get_temperature
 from tasks import task_onair
 
-import asyncio
 import json
 import time
 import unicornhat as unicorn
@@ -23,11 +22,6 @@ api = Api(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 CORS(app)
-
-WEATHER_BASE_URL = "http://api.openweathermap.org/data/2.5"
-
-MESSAGES = []
-SOCKETS = set()
 
 
 def set_pixels(pixels):

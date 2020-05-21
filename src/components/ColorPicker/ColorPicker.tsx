@@ -5,7 +5,7 @@ import classNames from "classnames";
 
 import { SelectedColor } from "../../context/ColorContext";
 
-import "./css/ColorPicker.css";
+import "./ColorPicker.css";
 
 export type Props = {
   color: SelectedColor;
@@ -22,7 +22,7 @@ function ColorPicker({ color, onChange }: Props) {
       <div className="field">
         <label className="label">color picker</label>
         <div className="control">
-          <div className="buttons has-addons">
+          <div className="buttons has-addons are-small">
             {pickers.map((opt) => (
               <button
                 className={classNames("button", {

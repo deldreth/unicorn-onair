@@ -9,7 +9,7 @@ import {
   defaultValue as defaultColorValue,
 } from "./context/ColorContext";
 import { getPixels as fetchPixels } from "./components/Pixels/utils/getPixels";
-import ColorGrid from "./components/ColorGrid/ColorGrid";
+import PaintablePixels from "./components/PaintablePixels/PaintablePixels";
 import ColorPicker from "./components/ColorPicker/ColorPicker";
 import Frames from "./components/Frames/Frames";
 import ModeSelector from "./components/ModeSelector/ModeSelector";
@@ -52,7 +52,7 @@ function App() {
 
         <div className="pixels-container">
           {isPaintable && (
-            <ColorGrid
+            <PaintablePixels
               isPainting={isPainting}
               width={150}
               pixels={pixels}

@@ -33,7 +33,7 @@ function ModeSelector({ mode, onChange }: Props) {
     <div id="mode-selector" className="field">
       <label className="label">mode</label>
       <div className="control">
-        <div className="buttons has-addons">
+        <div className="buttons has-addons are-small">
           {modes.map((opt) => (
             <button
               className={classNames("button", {

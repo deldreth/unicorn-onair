@@ -1,5 +1,8 @@
 import React from "react";
 
+// @ts-ignore
+import io from "socket.io-client";
+
 import { BASE_URL } from "./utils/config";
 import {
   ColorContext,
@@ -14,31 +17,31 @@ import Pixels, { Pixels as PixelsType } from "./components/Pixels/Pixels";
 
 import "./App.css";
 
+const socket = io("onair:5000");
+
 function App() {
   const [color, setColor] = React.useState(defaultColorValue);
+  const [isPainting, setIsPainting] = React.useState(false);
   const [mode, setMode] = React.useState("auto");
   const [pixels, setPixels] = React.useState<PixelsType>([]);
 
   const isPaintable = mode === "paint" || mode === "frames";
 
   React.useEffect(() => {
-    async function getMode() {
+    (async function init() {
       const response = await fetch(`${BASE_URL}/mode`);
       const { mode } = await response.json();
 
       setMode(mode);
-    }
-
-    getMode();
-  }, []);
-
-  React.useEffect(() => {
-    async function getPixels() {
       setPixels(await fetchPixels());
-    }
+    })();
 
-    getPixels();
-  }, [mode]);
+    socket.on("pixels", ({ data }: any) => {
+      if (!isPainting) {
+        setPixels(JSON.parse(data));
+      }
+    });
+  }, []);
 
   return (
     <ColorContext.Provider value={color}>
@@ -50,9 +53,11 @@ function App() {
         <div className="pixels-container">
           {isPaintable && (
             <ColorGrid
+              isPainting={isPainting}
               width={150}
               pixels={pixels}
               onChange={(nextPixels) => setPixels(nextPixels)}
+              onDrawChange={(status) => setIsPainting(status)}
             />
           )}
 

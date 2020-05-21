@@ -88,8 +88,6 @@ function Frames({ pixels }: Props) {
                   .filter(([key, value]) => value === true)
                   .map(([key]) => parseInt(key, 10));
 
-                console.log(frameIndexes);
-
                 const nextFrames = frames.filter(
                   (frame, index) => !frameIndexes.includes(index)
                 );

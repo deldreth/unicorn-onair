@@ -8,13 +8,14 @@ import { setPixel } from "../Pixels/utils/setPixel";
 import { Pixels as PixelsType } from "../Pixels/Pixels";
 
 type Props = {
+  isPainting: boolean;
   width: number;
   pixels: PixelsType;
   onChange: (pixels: PixelsType) => void;
+  onDrawChange: (status: boolean) => void;
 };
 
-function Grid({ width, pixels, onChange }: Props) {
-  const [isDrawing, setIsDrawing] = React.useState(false);
+function Grid({ width, pixels, onChange, isPainting, onDrawChange }: Props) {
   const selectedColor = React.useContext(ColorContext);
 
   const pixelWidth = width / 4;
@@ -34,10 +35,10 @@ function Grid({ width, pixels, onChange }: Props) {
     return (
       <Stage width={width} height={width * 2} style={{ width }}>
         <Layer
-          onTouchStart={() => setIsDrawing(true)}
-          onTouchEnd={() => setIsDrawing(false)}
-          onMouseDown={() => setIsDrawing(true)}
-          onMouseUp={() => setIsDrawing(false)}
+          onTouchStart={() => onDrawChange(true)}
+          onTouchEnd={() => onDrawChange(false)}
+          onMouseDown={() => onDrawChange(true)}
+          onMouseUp={() => onDrawChange(false)}
         >
           <Rect
             x={0}
@@ -58,13 +59,13 @@ function Grid({ width, pixels, onChange }: Props) {
                 fill={rgbToHex(row)}
                 onMouseDown={() => updateColor(colIndex, rowIndex)}
                 onMouseOver={() => {
-                  if (isDrawing) {
+                  if (isPainting) {
                     updateColor(colIndex, rowIndex);
                   }
                 }}
                 onTouchStart={() => updateColor(colIndex, rowIndex)}
                 onTouchMove={() => {
-                  if (isDrawing) {
+                  if (isPainting) {
                     updateColor(colIndex, rowIndex);
                   }
                 }}

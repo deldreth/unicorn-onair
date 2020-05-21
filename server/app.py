@@ -1,17 +1,17 @@
 from flask import Flask, request
-from flask_restful import Resource, Api, reqparse
 from flask_cors import CORS
-from celery import Celery
-from celery.schedules import crontab
-from weather_icons import get_weather_icon, get_temperature
+from flask_restful import Resource, Api, reqparse
+from flask_socketio import SocketIO
+from datetime import datetime
 from number_icons import number_to_pixels, color_ranges
 from onair_icons import onair_frames
-from datetime import datetime
+from weather_icons import get_weather_icon, get_temperature
+from tasks import task_onair
 
-import unicornhat as unicorn
-import requests
-import time
+import asyncio
 import json
+import time
+import unicornhat as unicorn
 
 unicorn.set_layout(unicorn.PHAT)
 unicorn.rotation(180)
@@ -19,106 +19,37 @@ unicorn.brightness(0.5)
 
 app = Flask(__name__)
 api = Api(app)
-celery = Celery(app.name, broker="pyamqp://guest@localhost//")
+# sockets = Sockets(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 CORS(app)
 
-parser = reqparse.RequestParser()
-
-DURATION = 60
 WEATHER_BASE_URL = "http://api.openweathermap.org/data/2.5"
 
-file = "mode.json"
-hours = range(8, 23)
+MESSAGES = []
+SOCKETS = set()
 
 
-def get_mode():
-    response = requests.get("http://localhost:5000/mode").json()
-    return response["mode"]
+def set_pixels(pixels):
+    unicorn.set_pixels(pixels)
+    unicorn.show()
 
-
-def reset_mode():
-    payload = {"mode": "auto"}
-    requests.post(
-        "http://localhost:5000/mode", data=json.dumps(payload), headers={"Content-Type": "application/json"})
-
-
-def get_hour():
-    now = datetime.now()
-    return now.hour
-
-
-@celery.task
-def task_update_weather():
-    mode = get_mode()
-    hour = get_hour()
-
-    if hour in hours:
-        if (mode == "auto" or mode == "weather"):
-            update_weather()
-    else:
-        unicorn.off()
-
-
-@celery.task
-def task_update_temperature():
-    mode = get_mode()
-    hour = get_hour()
-
-    if hour in hours:
-        if (mode == "auto" or mode == "temperature"):
-            update_temperature()
-    else:
-        unicorn.off()
-
-
-@celery.task
-def task_onair():
-    mode = get_mode()
-    end_time = time.time() + 1800
-
-    while mode == "onair" and time.time() < end_time:
-        cylon()
-        mode = get_mode()
-
-    if mode == "onair":
-        reset_mode()
-    else:
-        if mode == "weather":
-            task_update_weather.apply_async()
-        if mode == "temperature":
-            task_update_temperature.apply_async()
-
-
-@celery.on_after_configure.connect
-def setup_after(sender, **kwargs):
-    # even minutes
-    sender.add_periodic_task(
-        crontab(minute="*/2"), task_update_weather.s())
-
-    # odd minutes
-    sender.add_periodic_task(
-        crontab(minute="1-59/2"), task_update_temperature.s())
+    socketio.emit('pixels', {"data": json.dumps(pixels)})
+    socketio.sleep(0)
 
 
 def update_weather():
     icon = get_weather_icon()
 
-    if isinstance(icon, list):
-        end_time = time.time() + 5
+    end_time = time.time() + 5
 
-        while time.time() < end_time:
-            for frame in icon:
-                unicorn.set_pixels(frame)
-                unicorn.show()
+    while time.time() < end_time:
+        for frame in icon:
+            set_pixels(frame)
 
-                time.sleep(0.1)
+            time.sleep(0.2)
 
-        unicorn.set_pixels(icon[0])
-        unicorn.show()
-    else:
-        unicorn.set_pixels(icon)
-        unicorn.show()
+    set_pixels(icon[0])
 
 
 def update_temperature():
@@ -126,22 +57,19 @@ def update_temperature():
 
     [rgb] = [color for (rng, color) in color_ranges if temperature in rng]
 
-    unicorn.set_pixels(number_to_pixels(temperature, rgb))
-    unicorn.show()
+    set_pixels(number_to_pixels(temperature, rgb))
 
 
 def cylon():
     for pixels in onair_frames:
-        unicorn.set_pixels(pixels)
-        unicorn.show()
+        set_pixels(pixels)
 
         time.sleep(0.1)
 
     onair_frames.reverse()
 
     for pixels in onair_frames:
-        unicorn.set_pixels(pixels)
-        unicorn.show()
+        set_pixels(pixels)
 
         time.sleep(0.1)
 
@@ -155,6 +83,8 @@ class Pixel(Resource):
             data["rgb"]["g"]), int(data["rgb"]["b"]))
         unicorn.show()
 
+        socketio.emit("pixels", {"data": json.dumps(unicorn.get_pixels())})
+
 
 class Pixels(Resource):
     def get(self):
@@ -162,8 +92,12 @@ class Pixels(Resource):
 
     def post(self):
         data = request.json
-        unicorn.set_pixels(data["pixels"])
-        unicorn.show()
+        set_pixels(data["pixels"])
+
+
+class PixelsOff(Resource):
+    def post(self):
+        unicorn.off()
 
 
 class Weather(Resource):
@@ -184,6 +118,11 @@ class Mode(Resource):
     def post(self):
         data = request.json
 
+        if data["mode"] == "weather":
+            update_weather()
+        elif data["mode"] == "temperature":
+            update_temperature()
+
         with open("mode.json", "w") as json_file:
             json.dump(data, json_file)
 
@@ -197,6 +136,11 @@ class OnAir(Resource):
             task_onair.apply_async()
 
 
+class OnAirContinue(Resource):
+    def post(self):
+        cylon()
+
+
 class Frames(Resource):
     def post(self):
         data = request.json
@@ -205,19 +149,21 @@ class Frames(Resource):
         duration = float(data["duration"])
 
         for pixels in frames:
-            unicorn.set_pixels(pixels)
-            unicorn.show()
+            set_pixels(pixels)
 
             time.sleep(duration)
 
 
 api.add_resource(Pixel, "/")
 api.add_resource(Pixels, "/pixels")
+api.add_resource(PixelsOff, "/pixels/off")
 api.add_resource(Weather, "/weather")
 api.add_resource(Temperature, "/temperature")
 api.add_resource(Mode, "/mode")
 api.add_resource(OnAir, "/onair")
+api.add_resource(OnAirContinue, "/onair/continue")
 api.add_resource(Frames, "/frames")
 
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=False)
+    socketio.run(app, host="0.0.0.0", port=5000)

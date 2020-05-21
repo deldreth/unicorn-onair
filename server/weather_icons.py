@@ -25,7 +25,7 @@ weather_icon_map = [
     ("fog", ["Areas Of Fog", "Fog", "Smoke"]),
     ("light_rain_frames", ["Drizzle", "Light Rain"]),
     ("rain_frames", ["Rain Showers", "Rain", "Heavy Rain"]),
-    ("thunderstorm", ["Showers and Thunderstorms",
+    ("thunderstorm", ["Showers And Thunderstorms",
                       "Thunderstorms", "T-storms"])
 ]
 
@@ -44,6 +44,8 @@ def get_weather_icon():
     for descriptor in descriptors:
         shortForecast = shortForecast.replace(descriptor, "")
         shortForecast = shortForecast.strip()
+
+    print(shortForecast)
 
     for (icon_set, search_terms) in weather_icon_map:
         if shortForecast in search_terms:

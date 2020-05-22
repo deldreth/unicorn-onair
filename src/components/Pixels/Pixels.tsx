@@ -8,36 +8,66 @@ type Cell = number[];
 type Row = Cell[];
 export type Pixels = Row[];
 
-type Props = {
-  pixels: Pixels;
-  width: number;
+type PaintableProps = {
+  isPainting?: boolean;
+  toggleIsPainting?: (nextIsPainting: boolean) => void;
+  onPaintPixel?: (x: number, y: number) => void;
 };
 
-function Pixels({ width, pixels }: Props) {
-  const pixelWidth = width / 4;
+type Props = PaintableProps & {
+  pixels: Pixels;
+  width?: number;
+};
+
+function Pixels({
+  width,
+  pixels,
+  isPainting,
+  onPaintPixel,
+  toggleIsPainting,
+}: Props) {
+  const relativeWidth =
+    window.innerWidth < 500 ? window.innerWidth / 2.5 : window.innerWidth / 4;
+  const w = width || relativeWidth;
+  const pixelWidth = w / 4;
+
+  const paint = (x: number, y: number) => () => {
+    onPaintPixel && onPaintPixel(x, y);
+  };
 
   return (
-    <Stage width={width} height={width * 2}>
-      <Layer>
+    <Stage width={w * 2} height={w}>
+      <Layer
+        onMouseDown={() => toggleIsPainting && toggleIsPainting(true)}
+        onMouseUp={() => toggleIsPainting && toggleIsPainting(false)}
+      >
         <Rect
           x={0}
           y={0}
-          width={width}
-          height={width * 2}
+          width={w * 2}
+          height={w}
           cornerRadius={pixelWidth / 2 - 2}
           fill="#222222"
         />
 
         {pixels.map((column, colIndex) =>
-          column.map((rgb, rowIndex) => (
-            <Pixel
-              key={`${colIndex}-${rowIndex}`}
-              width={pixelWidth}
-              column={colIndex}
-              row={rowIndex}
-              rgb={rgb}
-            />
-          ))
+          column.map((rgb, rowIndex) => {
+            return (
+              <Pixel
+                key={`${colIndex}-${rowIndex}`}
+                width={pixelWidth}
+                column={colIndex}
+                row={rowIndex}
+                rgb={rgb}
+                onMouseDown={paint(colIndex, rowIndex)}
+                onMouseOver={() => {
+                  isPainting &&
+                    onPaintPixel &&
+                    onPaintPixel(colIndex, rowIndex);
+                }}
+              />
+            );
+          })
         )}
       </Layer>
     </Stage>

@@ -7,7 +7,7 @@ import { SelectedColor } from "../../context/ColorContext";
 
 import "./ColorPicker.css";
 
-export type Props = {
+type Props = {
   color: SelectedColor;
   onChange: (color: SelectedColor) => void;
 };
@@ -25,6 +25,7 @@ function ColorPicker({ color, onChange }: Props) {
           <div className="buttons has-addons are-small">
             {pickers.map((opt) => (
               <button
+                key={opt}
                 className={classNames("button", {
                   "is-selected": picker === opt,
                   "is-info": picker === opt,

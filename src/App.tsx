@@ -8,6 +8,10 @@ import {
   ColorContext,
   defaultValue as defaultColorValue,
 } from "./context/ColorContext";
+import {
+  PaintingContext,
+  defaultValue as defaultIsPaintingValue,
+} from "./context/PaintingContext";
 import { getPixels as fetchPixels } from "./components/Pixels/utils/getPixels";
 import PaintablePixels from "./components/PaintablePixels/PaintablePixels";
 import ColorPicker from "./components/ColorPicker/ColorPicker";
@@ -21,7 +25,7 @@ const socket = io("onair:5000");
 
 function App() {
   const [color, setColor] = React.useState(defaultColorValue);
-  const [isPainting, setIsPainting] = React.useState(false);
+  const [isPainting, setIsPainting] = React.useState(defaultIsPaintingValue);
   const [mode, setMode] = React.useState("auto");
   const [pixels, setPixels] = React.useState<PixelsType>([]);
 
@@ -43,29 +47,32 @@ function App() {
     });
   }, []);
 
+  function toggleIsPainting(nextIsPainting: boolean) {
+    setIsPainting(nextIsPainting);
+  }
+
   return (
     <ColorContext.Provider value={color}>
-      <div className="container">
-        <ModeSelector mode={mode} onChange={setMode} />
+      <PaintingContext.Provider value={{ isPainting, toggleIsPainting }}>
+        <div className="container">
+          <ModeSelector mode={mode} onChange={setMode} />
 
-        {isPaintable && <ColorPicker color={color} onChange={setColor} />}
+          {isPaintable && <ColorPicker color={color} onChange={setColor} />}
 
-        <div className="pixels-container">
-          {isPaintable && (
-            <PaintablePixels
-              isPainting={isPainting}
-              width={150}
-              pixels={pixels}
-              onChange={(nextPixels) => setPixels(nextPixels)}
-              onDrawChange={(status) => setIsPainting(status)}
-            />
-          )}
+          <div className="pixels-container">
+            {isPaintable && (
+              <PaintablePixels
+                pixels={pixels}
+                onChange={(nextPixels) => setPixels(nextPixels)}
+              />
+            )}
 
-          {!isPaintable && <Pixels width={300} pixels={pixels} />}
+            {!isPaintable && <Pixels pixels={pixels} />}
+          </div>
+
+          {mode === "frames" && <Frames pixels={pixels} />}
         </div>
-
-        {mode === "frames" && <Frames pixels={pixels} />}
-      </div>
+      </PaintingContext.Provider>
     </ColorContext.Provider>
   );
 }

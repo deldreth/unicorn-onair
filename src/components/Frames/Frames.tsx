@@ -53,7 +53,7 @@ function Frames({ pixels }: Props) {
   }
 
   return (
-    <div>
+    <>
       <FrameControls
         isPlaying={isPlaying}
         duration={duration}
@@ -83,7 +83,7 @@ function Frames({ pixels }: Props) {
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 }
 

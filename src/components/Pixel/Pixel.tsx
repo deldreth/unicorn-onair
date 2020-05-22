@@ -17,7 +17,7 @@ function Pixel({ width, column, row, rgb, ...restProps }: Props) {
   const y = width * row + width / 2;
   const r = width / 2 - 2;
 
-  return <Circle {...restProps} x={x} y={y} radius={r} fill={rgbToHex(rgb)} />;
+  return <Circle {...restProps} x={y} y={x} radius={r} fill={rgbToHex(rgb)} />;
 }
 
 export default Pixel;

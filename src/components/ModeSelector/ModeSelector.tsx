@@ -36,6 +36,7 @@ function ModeSelector({ mode, onChange }: Props) {
         <div className="buttons has-addons are-small">
           {modes.map((opt) => (
             <button
+              key={opt}
               className={classNames("button", {
                 "is-selected": mode === opt,
                 "is-info": mode === opt,
